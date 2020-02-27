@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -27,11 +28,25 @@ import com.mapbox.mapboxsdk.maps.Style;
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.style.expressions.Expression;
+import com.mapbox.mapboxsdk.style.layers.CircleLayer;
 import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
+
+import static com.mapbox.mapboxsdk.style.expressions.Expression.eq;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.exponential;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.interpolate;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.literal;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.match;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.stop;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleColor;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleOpacity;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleRadius;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconIgnorePlacement;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconSize;
 
 // classes to calculate a route
 import com.mapbox.services.android.navigation.ui.v5.NavigationLauncherOptions;
@@ -50,7 +65,7 @@ import android.widget.Button;
 import com.mapbox.services.android.navigation.ui.v5.NavigationLauncher;
 
 
-
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, MapboxMap.OnMapClickListener, PermissionsListener {
@@ -66,7 +81,25 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private NavigationMapRoute navigationMapRoute;
     // variables needed to initialize navigation
     private Button button;
-    Double lat;
+
+    private static final String SOURCE_ID = "mapbox.poi";
+    private static final String MAKI_LAYER_ID = "mapbox.poi.maki";
+    private static final String LOADING_LAYER_ID = "mapbox.poi.loading";
+    private static final String CALLOUT_LAYER_ID = "mapbox.poi.callout";
+
+    private static final String PROPERTY_SELECTED = "selected";
+    private static final String PROPERTY_LOADING = "loading";
+    private static final String PROPERTY_LOADING_PROGRESS = "loading_progress";
+    private static final String PROPERTY_TITLE = "title";
+    private static final String PROPERTY_FAVOURITE = "favourite";
+    private static final String PROPERTY_DESCRIPTION = "description";
+    private static final String PROPERTY_POI = "poi";
+    private static final String PROPERTY_STYLE = "style";
+
+    private static final long CAMERA_ANIMATION_TIME = 1950;
+    private static final float LOADING_CIRCLE_RADIUS = 60;
+    private static final int LOADING_PROGRESS_STEPS = 25; //number of steps in a progress animation
+    private static final int LOADING_STEP_DURATION = 50; //duration between each step
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,6 +183,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 iconIgnorePlacement(true)
         );
         loadedMapStyle.addLayer(destinationSymbolLayer);
+        loadedMapStyle.addLayerBelow(new CircleLayer(LOADING_LAYER_ID, "destination-source-id")
+                .withProperties(
+                        circleRadius(26f),
+                        circleRadius(interpolate(exponential(1), get(PROPERTY_LOADING_PROGRESS), getLoadingAnimationStops())),
+                        circleColor(Color.GRAY),
+                        circleOpacity(0.6f)
+                )
+                .withFilter(eq(get(PROPERTY_LOADING), literal(true))), "destination-symbol-layer-id");
+    }
+
+    private Expression.Stop[] getLoadingAnimationStops() {
+        List<Expression.Stop> stops = new ArrayList<>();
+        for (int i = 0; i < LOADING_PROGRESS_STEPS; i++) {
+            stops.add(stop(i, LOADING_CIRCLE_RADIUS * i / LOADING_PROGRESS_STEPS));
+        }
+
+        return stops.toArray(new Expression.Stop[LOADING_PROGRESS_STEPS]);
     }
 
     @SuppressWarnings( {"MissingPermission"})
