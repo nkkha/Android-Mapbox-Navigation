@@ -1,1031 +1,633 @@
-//package com.khama.demomapbox;
-//
-//import android.animation.Animator;
-//import android.animation.AnimatorSet;
-//import android.animation.TypeEvaluator;
-//import android.animation.ValueAnimator;
-//import android.annotation.SuppressLint;
-//import android.content.Context;
-//import android.graphics.Bitmap;
-//import android.graphics.Canvas;
-//import android.graphics.Color;
-//import android.graphics.Paint;
-//import android.graphics.PointF;
-//import android.graphics.PorterDuff;
-//import android.graphics.PorterDuffXfermode;
-//import android.graphics.Rect;
-//import android.os.AsyncTask;
-//import android.os.Bundle;
-//import android.os.Handler;
-//import androidx.annotation.IntDef;
-//import androidx.annotation.NonNull;
-//import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
-//import androidx.appcompat.app.AppCompatActivity;
-//import androidx.cardview.widget.CardView;
-//import androidx.recyclerview.widget.DefaultItemAnimator;
-//import androidx.recyclerview.widget.LinearLayoutManager;
-//import androidx.recyclerview.widget.PagerSnapHelper;
-//import androidx.recyclerview.widget.RecyclerView;
-//import androidx.recyclerview.widget.SnapHelper;
-//import android.view.LayoutInflater;
-//import android.view.View;
-//import android.view.ViewGroup;
-//import android.widget.ImageView;
-//import android.widget.TextView;
-//import android.widget.Toast;
-//
-//import com.mapbox.geojson.Feature;
-//import com.mapbox.geojson.FeatureCollection;
-//import com.mapbox.geojson.Point;
-//import com.mapbox.mapboxsdk.Mapbox;
-//import com.mapbox.mapboxsdk.camera.CameraPosition;
-//import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
-//import com.mapbox.mapboxsdk.geometry.LatLng;
-//import com.mapbox.mapboxsdk.maps.MapView;
-//import com.mapbox.mapboxsdk.maps.MapboxMap;
-//import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
-//import com.mapbox.mapboxsdk.maps.Style;
-//import com.mapbox.mapboxsdk.style.expressions.Expression;
-//import com.mapbox.mapboxsdk.style.layers.CircleLayer;
-//import com.mapbox.mapboxsdk.style.layers.Layer;
-//import com.mapbox.mapboxsdk.style.layers.LineLayer;
-//import com.mapbox.mapboxsdk.style.layers.Property;
-//import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
-//import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
-//import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
-//import com.mapbox.mapboxsdk.style.sources.Source;
-//import com.mapbox.mapboxsdk.style.sources.TileSet;
-//import com.mapbox.mapboxsdk.style.sources.VectorSource;
-//import com.squareup.picasso.Picasso;
-//
-//import java.io.InputStream;
-//import java.lang.annotation.Retention;
-//import java.lang.annotation.RetentionPolicy;
-//import java.lang.ref.WeakReference;
-//import java.nio.charset.Charset;
-//import java.util.ArrayList;
-//import java.util.HashMap;
-//import java.util.List;
-//import java.util.Map;
-//
-//import okhttp3.OkHttpClient;
-//import okhttp3.Request;
-//import okhttp3.Response;
-//import timber.log.Timber;
-//
-//import static androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.all;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.eq;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.exponential;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.gte;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.interpolate;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.literal;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.lt;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.match;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.stop;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.toNumber;
-//import static com.mapbox.mapboxsdk.style.expressions.Expression.zoom;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleColor;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleOpacity;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleRadius;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAnchor;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconOffset;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconSize;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineCap;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineColor;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineJoin;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineOpacity;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineWidth;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textColor;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textField;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textIgnorePlacement;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textOffset;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textSize;
-//import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.visibility;
-//
-//public class SymbolLayerMapillaryActivity extends AppCompatActivity implements OnMapReadyCallback,
-//        MapboxMap.OnMapClickListener {
-//    private static final String SOURCE_ID = "mapbox.poi";
-//    private static final String MAKI_LAYER_ID = "mapbox.poi.maki";
-//    private static final String LOADING_LAYER_ID = "mapbox.poi.loading";
-//    private static final String CALLOUT_LAYER_ID = "mapbox.poi.callout";
-//
-//    private static final String PROPERTY_SELECTED = "selected";
-//    private static final String PROPERTY_LOADING = "loading";
-//    private static final String PROPERTY_LOADING_PROGRESS = "loading_progress";
-//    private static final String PROPERTY_TITLE = "title";
-//    private static final String PROPERTY_FAVOURITE = "favourite";
-//    private static final String PROPERTY_DESCRIPTION = "description";
-//    private static final String PROPERTY_POI = "poi";
-//    private static final String PROPERTY_STYLE = "style";
-//
-//    private static final long CAMERA_ANIMATION_TIME = 1950;
-//    private static final float LOADING_CIRCLE_RADIUS = 60;
-//    private static final int LOADING_PROGRESS_STEPS = 25; //number of steps in a progress animation
-//    private static final int LOADING_STEP_DURATION = 50; //duration between each step
-//
-//    private MapView mapView;
-//    private MapboxMap mapboxMap;
-//    private RecyclerView recyclerView;
-//
-//    private GeoJsonSource source;
-//    private FeatureCollection featureCollection;
-//    private HashMap<String, View> viewMap;
-//    private AnimatorSet animatorSet;
-//
-//    private LoadMapillaryDataTask loadMapillaryDataTask;
-//
-//    @ActivityStep
-//    private int currentStep;
-//
-//    @Retention(RetentionPolicy.SOURCE)
-//    @IntDef( {STEP_INITIAL, STEP_LOADING, STEP_READY})
-//    public @interface ActivityStep {
-//    }
-//
-//    private static final int STEP_INITIAL = 0;
-//    private static final int STEP_LOADING = 1;
-//    private static final int STEP_READY = 2;
-//
-//    private static final Map<Integer, Double> stepZoomMap = new HashMap<>();
-//
-//    static {
-//        stepZoomMap.put(STEP_INITIAL, 11.0);
-//        stepZoomMap.put(STEP_LOADING, 13.5);
-//        stepZoomMap.put(STEP_READY, 18.0);
-//    }
-//
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//
-//        // Mapbox access token is configured here. This needs to be called either in your application
-//        // object or in the same activity which contains the mapview.
-//        Mapbox.getInstance(this, getString(R.string.access_token));
-//
-//        // This contains the MapView in XML and needs to be called after the access token is configured.
-//        setContentView(R.layout.activity_symbol_layer_mapillary);
-//
-//        recyclerView = findViewById(R.id.rv_on_top_of_map);
-//
-//        // Initialize the map view
-//        mapView = findViewById(R.id.mapView);
-//        mapView.onCreate(savedInstanceState);
-//        mapView.getMapAsync(this);
-//    }
-//
-//    @Override
-//    public void onMapReady(@NonNull final MapboxMap mapboxMap) {
-//        this.mapboxMap = mapboxMap;
-//        mapboxMap.setStyle(Style.DARK, new Style.OnStyleLoaded() {
-//            @Override
-//            public void onStyleLoaded(@NonNull Style style) {
-//                mapboxMap.getUiSettings().setCompassEnabled(false);
-//                mapboxMap.getUiSettings().setLogoEnabled(false);
-//                mapboxMap.getUiSettings().setAttributionEnabled(false);
-//                new LoadPoiDataTask(SymbolLayerMapillaryActivity.this).execute();
-//                mapboxMap.addOnMapClickListener(SymbolLayerMapillaryActivity.this);
-//            }
-//        });
-//    }
-//
-//    @Override
-//    public boolean onMapClick(@NonNull LatLng point) {
-//        PointF screenPoint = mapboxMap.getProjection().toScreenLocation(point);
-//        List<Feature> features = mapboxMap.queryRenderedFeatures(screenPoint, CALLOUT_LAYER_ID);
-//        if (!features.isEmpty()) {
-//            // we received a click event on the callout layer
-//            Feature feature = features.get(0);
-//            PointF symbolScreenPoint = mapboxMap.getProjection().toScreenLocation(convertToLatLng(feature));
-//        } else {
-//            // we didn't find a click event on callout layer, try clicking maki layer
-//            return handleClickIcon(screenPoint);
-//        }
-//        return true;
-//    }
-//
-//    public void setupData(final FeatureCollection collection) {
-//        if (mapboxMap == null) {
-//            return;
-//        }
-//        featureCollection = collection;
-//        mapboxMap.getStyle(new Style.OnStyleLoaded() {
-//            @Override
-//            public void onStyleLoaded(@NonNull Style style) {
-//                setupSource(style);
-//                setupMakiLayer(style);
-//                setupLoadingLayer(style);
-//                setupCalloutLayer(style);
-//                hideLabelLayers(style);
-//                setupMapillaryTiles(style);
-//            }
-//        });
-//    }
-//
-//    private void setupSource(@NonNull Style loadedMapStyle) {
-//        source = new GeoJsonSource(SOURCE_ID, featureCollection);
-//        loadedMapStyle.addSource(source);
-//    }
-//
-//    private void refreshSource() {
-//        if (source != null && featureCollection != null) {
-//            source.setGeoJson(featureCollection);
-//        }
-//    }
-//
-//    /**
-//     * Setup a layer with maki icons, eg. restaurant.
-//     */
-//    private void setupMakiLayer(@NonNull Style loadedMapStyle) {
-//        loadedMapStyle.addLayer(new SymbolLayer(MAKI_LAYER_ID, SOURCE_ID)
-//                .withProperties(
-//                        /* show maki icon based on the value of poi feature property
-//                         * https://www.mapbox.com/maki-icons/
-//                         */
-//                        iconImage("{poi}-15"),
-//
-//                        /* allows show all icons */
-//                        iconAllowOverlap(true),
-//
-//                        /* when feature is in selected state, grow icon */
-//                        iconSize(match(Expression.toString(get(PROPERTY_SELECTED)), literal(1.0f),
-//                                stop("true", 1.5f))))
-//        );
-//    }
-//
-//    /**
-//     * Setup layer indicating that there is an ongoing progress.
-//     */
-//    private void setupLoadingLayer(@NonNull Style loadedMapStyle) {
-//        loadedMapStyle.addLayerBelow(new CircleLayer(LOADING_LAYER_ID, SOURCE_ID)
-//                .withProperties(
-//                        circleRadius(interpolate(exponential(1), get(PROPERTY_LOADING_PROGRESS), getLoadingAnimationStops())),
-//                        circleColor(Color.GRAY),
-//                        circleOpacity(0.6f)
-//                )
-//                .withFilter(eq(get(PROPERTY_LOADING), literal(true))), MAKI_LAYER_ID);
-//    }
-//
-//    private Expression.Stop[] getLoadingAnimationStops() {
-//        List<Expression.Stop> stops = new ArrayList<>();
-//        for (int i = 0; i < LOADING_PROGRESS_STEPS; i++) {
-//            stops.add(stop(i, LOADING_CIRCLE_RADIUS * i / LOADING_PROGRESS_STEPS));
-//        }
-//
-//        return stops.toArray(new Expression.Stop[LOADING_PROGRESS_STEPS]);
-//    }
-//
-//    /**
-//     * Setup a layer with Android SDK call-outs
-//     * <p>
-//     * title of the feature is used as key for the iconImage
-//     * </p>
-//     */
-//    private void setupCalloutLayer(@NonNull Style loadedMapStyle) {
-//        loadedMapStyle.addLayer(new SymbolLayer(CALLOUT_LAYER_ID, SOURCE_ID)
-//                .withProperties(
-//                        /* show image with id title based on the value of the title feature property */
-//                        iconImage("{title}"),
-//
-//                        /* set anchor of icon to bottom-left */
-//                        iconAnchor(Property.ICON_ANCHOR_BOTTOM_LEFT),
-//
-//                        /* offset icon slightly to match bubble layout */
-//                        iconOffset(new Float[] {-20.0f, -10.0f})
-//                )
-//
-//                /* add a filter to show only when selected feature property is true */
-//                .withFilter(eq((get(PROPERTY_SELECTED)), literal(true))));
-//    }
-//
-//
-//    private void hideLabelLayers(@NonNull Style style) {
-//        String id;
-//        for (Layer layer : style.getLayers()) {
-//            id = layer.getId();
-//            if (id.startsWith("place") || id.startsWith("poi") || id.startsWith("marine") || id.startsWith("road-label")) {
-//                layer.setProperties(visibility(Property.NONE));
-//            }
-//        }
-//    }
-//
-//    private void setupMapillaryTiles(@NonNull Style loadedMapStyle) {
-//        loadedMapStyle.addSource(MapillaryTiles.createSource());
-//        loadedMapStyle.addLayerBelow(MapillaryTiles.createLineLayer(), LOADING_LAYER_ID);
-//    }
-//
-//    /**
-//     * This method handles click events for callout symbols.
-//     * <p>
-//     * It creates a hit rectangle based on the the textView, offsets that rectangle to the location
-//     * of the symbol on screen and hit tests that with the screen point.
-//     * </p>
-//     *
-//     * @param feature           the feature that was clicked
-//     * @param screenPoint       the point on screen clicked
-//     * @param symbolScreenPoint the point of the symbol on screen
-//     */
-//
-//    /**
-//     * This method handles click events for maki symbols.
-//     * <p>
-//     * When a maki symbol is clicked, we moved that feature to the selected state.
-//     * </p>
-//     *
-//     * @param screenPoint the point on screen clicked
-//     */
-//    private boolean handleClickIcon(PointF screenPoint) {
-//        List<Feature> features = mapboxMap.queryRenderedFeatures(screenPoint, MAKI_LAYER_ID);
-//        if (!features.isEmpty()) {
-//            String title = features.get(0).getStringProperty(PROPERTY_TITLE);
-//            List<Feature> featureList = featureCollection.features();
-//            for (int i = 0; i < featureList.size(); i++) {
-//                if (featureList.get(i).getStringProperty(PROPERTY_TITLE).equals(title)) {
-//                    setSelected(i, true);
-//                }
-//            }
-//
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    /**
-//     * Set a feature selected state with the ability to scroll the RecycleViewer to the provided index.
-//     *
-//     * @param index      the index of selected feature
-//     * @param withScroll indicates if the recyclerView position should be updated
-//     */
-//    private void setSelected(int index, boolean withScroll) {
-//        if (recyclerView.getVisibility() == View.GONE) {
-//            recyclerView.setVisibility(View.VISIBLE);
-//        }
-//
-//        deselectAll(false);
-//
-//        Feature feature = featureCollection.features().get(index);
-//        selectFeature(feature);
-//        animateCameraToSelection(feature);
-//        refreshSource();
-//        loadMapillaryData(feature);
-//
-//        if (withScroll) {
-//            recyclerView.scrollToPosition(index);
-//        }
-//    }
-//
-//    /**
-//     * Deselects the state of all the features
-//     */
-//    private void deselectAll(boolean hideRecycler) {
-//        for (Feature feature : featureCollection.features()) {
-//            feature.properties().addProperty(PROPERTY_SELECTED, false);
-//        }
-//
-//        if (hideRecycler) {
-//            recyclerView.setVisibility(View.GONE);
-//        }
-//    }
-//
-//    /**
-//     * Selects the state of a feature
-//     *
-//     * @param feature the feature to be selected.
-//     */
-//    private void selectFeature(Feature feature) {
-//        feature.properties().addProperty(PROPERTY_SELECTED, true);
-//    }
-//
-//    private Feature getSelectedFeature() {
-//        if (featureCollection != null) {
-//            for (Feature feature : featureCollection.features()) {
-//                if (feature.getBooleanProperty(PROPERTY_SELECTED)) {
-//                    return feature;
-//                }
-//            }
-//        }
-//
-//        return null;
-//    }
-//
-//    /**
-//     * Animate camera to a feature.
-//     *
-//     * @param feature the feature to animate to
-//     */
-//    private void animateCameraToSelection(Feature feature, double newZoom) {
-//        CameraPosition cameraPosition = mapboxMap.getCameraPosition();
-//
-//        if (animatorSet != null) {
-//            animatorSet.cancel();
-//        }
-//
-//        animatorSet = new AnimatorSet();
-//        animatorSet.playTogether(
-//                createLatLngAnimator(cameraPosition.target, convertToLatLng(feature)),
-//                createZoomAnimator(cameraPosition.zoom, newZoom),
-//                createBearingAnimator(cameraPosition.bearing, feature.getNumberProperty("bearing").doubleValue()),
-//                createTiltAnimator(cameraPosition.tilt, feature.getNumberProperty("tilt").doubleValue())
-//        );
-//        animatorSet.start();
-//    }
-//
-//    private void animateCameraToSelection(Feature feature) {
-//        double zoom = feature.getNumberProperty("zoom").doubleValue();
-//        animateCameraToSelection(feature, zoom);
-//    }
-//
-//
-//    /**
-//     * Set the favourite state of a feature based on the index.
-//     *
-//     * @param index the index of the feature to favourite/de-favourite
-//     */
-//    private void toggleFavourite(int index) {
-//        Feature feature = featureCollection.features().get(index);
-//        String title = feature.getStringProperty(PROPERTY_TITLE);
-//        boolean currentState = feature.getBooleanProperty(PROPERTY_FAVOURITE);
-//        feature.properties().addProperty(PROPERTY_FAVOURITE, !currentState);
-//        View view = viewMap.get(title);
-//
-//        ImageView imageView = view.findViewById(R.id.logoView);
-//        imageView.setImageResource(currentState ? R.drawable.ic_favorite : R.drawable.ic_favorite_border);
-//        Bitmap bitmap = SymbolGenerator.generate(view);
-//        mapboxMap.getStyle(new Style.OnStyleLoaded() {
-//            @Override
-//            public void onStyleLoaded(@NonNull Style style) {
-//                style.addImage(title, bitmap);
-//                refreshSource();
-//            }
-//        });
-//    }
-//
-//    /**
-//     * Invoked when the bitmaps have been generated from a view.
-//     */
-//    public void setImageGenResults(HashMap<String, View> viewMap, HashMap<String, Bitmap> imageMap) {
-//        mapboxMap.getStyle(new Style.OnStyleLoaded() {
-//            @Override
-//            public void onStyleLoaded(@NonNull Style style) {
-//                // calling addImages is faster as separate addImage calls for each bitmap.
-//                style.addImages(imageMap);
-//            }
-//        });
-//        // need to store reference to views to be able to use them as hitboxes for click events.
-//        SymbolLayerMapillaryActivity.this.viewMap = viewMap;
-//    }
-//
-//    private void setActivityStep(@ActivityStep int activityStep) {
-//        Feature selectedFeature = getSelectedFeature();
-//        double zoom = stepZoomMap.get(activityStep);
-//        animateCameraToSelection(selectedFeature, zoom);
-//
-//        currentStep = activityStep;
-//    }
-//
-//    @Override
-//    protected void onStart() {
-//        super.onStart();
-//        mapView.onStart();
-//    }
-//
-//    @Override
-//    public void onResume() {
-//        super.onResume();
-//        mapView.onResume();
-//    }
-//
-//    @Override
-//    public void onPause() {
-//        super.onPause();
-//        mapView.onPause();
-//    }
-//
-//    @Override
-//    protected void onStop() {
-//        super.onStop();
-//
-//        if (loadMapillaryDataTask != null) {
-//            loadMapillaryDataTask.cancel(true);
-//        }
-//        mapView.onStop();
-//    }
-//
-//    @Override
-//    protected void onSaveInstanceState(Bundle outState) {
-//        super.onSaveInstanceState(outState);
-//        mapView.onSaveInstanceState(outState);
-//    }
-//
-//    @Override
-//    public void onLowMemory() {
-//        super.onLowMemory();
-//        mapView.onLowMemory();
-//    }
-//
-//    @Override
-//    protected void onDestroy() {
-//        super.onDestroy();
-//        if (mapboxMap != null) {
-//            mapboxMap.removeOnMapClickListener(this);
-//        }
-//        mapView.onDestroy();
-//    }
-//
-//    @Override
-//    public void onBackPressed() {
-//        if (currentStep == STEP_LOADING || currentStep == STEP_READY) {
-//            if (loadMapillaryDataTask != null) {
-//                loadMapillaryDataTask.cancel(true);
-//            }
-//            setActivityStep(STEP_INITIAL);
-//            deselectAll(true);
-//            refreshSource();
-//        } else {
-//            super.onBackPressed();
-//        }
-//    }
-//
-//    private LatLng convertToLatLng(Feature feature) {
-//        Point symbolPoint = (Point) feature.geometry();
-//        return new LatLng(symbolPoint.latitude(), symbolPoint.longitude());
-//    }
-//
-//    private Animator createLatLngAnimator(LatLng currentPosition, LatLng targetPosition) {
-//        ValueAnimator latLngAnimator = ValueAnimator.ofObject(new LatLngEvaluator(), currentPosition, targetPosition);
-//        latLngAnimator.setDuration(CAMERA_ANIMATION_TIME);
-//        latLngAnimator.setInterpolator(new FastOutSlowInInterpolator());
-//        latLngAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-//            @Override
-//            public void onAnimationUpdate(ValueAnimator animation) {
-//                mapboxMap.moveCamera(CameraUpdateFactory.newLatLng((LatLng) animation.getAnimatedValue()));
-//            }
-//        });
-//        return latLngAnimator;
-//    }
-//
-//    private Animator createZoomAnimator(double currentZoom, double targetZoom) {
-//        ValueAnimator zoomAnimator = ValueAnimator.ofFloat((float) currentZoom, (float) targetZoom);
-//        zoomAnimator.setDuration(CAMERA_ANIMATION_TIME);
-//        zoomAnimator.setInterpolator(new FastOutSlowInInterpolator());
-//        zoomAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-//            @Override
-//            public void onAnimationUpdate(ValueAnimator animation) {
-//                mapboxMap.moveCamera(CameraUpdateFactory.zoomTo((Float) animation.getAnimatedValue()));
-//            }
-//        });
-//        return zoomAnimator;
-//    }
-//
-//    private Animator createBearingAnimator(double currentBearing, double targetBearing) {
-//        ValueAnimator bearingAnimator = ValueAnimator.ofFloat((float) currentBearing, (float) targetBearing);
-//        bearingAnimator.setDuration(CAMERA_ANIMATION_TIME);
-//        bearingAnimator.setInterpolator(new FastOutSlowInInterpolator());
-//        bearingAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-//            @Override
-//            public void onAnimationUpdate(ValueAnimator animation) {
-//                mapboxMap.moveCamera(CameraUpdateFactory.bearingTo((Float) animation.getAnimatedValue()));
-//            }
-//        });
-//        return bearingAnimator;
-//    }
-//
-//    private Animator createTiltAnimator(double currentTilt, double targetTilt) {
-//        ValueAnimator tiltAnimator = ValueAnimator.ofFloat((float) currentTilt, (float) targetTilt);
-//        tiltAnimator.setDuration(CAMERA_ANIMATION_TIME);
-//        tiltAnimator.setInterpolator(new FastOutSlowInInterpolator());
-//        tiltAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-//            @Override
-//            public void onAnimationUpdate(ValueAnimator animation) {
-//                mapboxMap.moveCamera(CameraUpdateFactory.tiltTo((Float) animation.getAnimatedValue()));
-//            }
-//        });
-//        return tiltAnimator;
-//    }
-//
-//    /**
-//     * Helper class to evaluate LatLng objects with a ValueAnimator
-//     */
-//    private static class LatLngEvaluator implements TypeEvaluator<LatLng> {
-//
-//        private final LatLng latLng = new LatLng();
-//
-//        @Override
-//        public LatLng evaluate(float fraction, LatLng startValue, LatLng endValue) {
-//            latLng.setLatitude(startValue.getLatitude()
-//                    + ((endValue.getLatitude() - startValue.getLatitude()) * fraction));
-//            latLng.setLongitude(startValue.getLongitude()
-//                    + ((endValue.getLongitude() - startValue.getLongitude()) * fraction));
-//            return latLng;
-//        }
-//    }
-//
-//    /**
-//     * AsyncTask to load data from the assets folder.
-//     */
-//    private static class LoadPoiDataTask extends AsyncTask<Void, Void, FeatureCollection> {
-//
-//        private final WeakReference<SymbolLayerMapillaryActivity> activityRef;
-//
-//        LoadPoiDataTask(SymbolLayerMapillaryActivity activity) {
-//            this.activityRef = new WeakReference<>(activity);
-//        }
-//
-//        @Override
-//        protected FeatureCollection doInBackground(Void... params) {
-//            SymbolLayerMapillaryActivity activity = activityRef.get();
-//
-//            if (activity == null) {
-//                return null;
-//            }
-//
-//            String geoJson = loadGeoJsonFromAsset(activity, "sf_poi.geojson");
-//            return FeatureCollection.fromJson(geoJson);
-//        }
-//
-//        @Override
-//        protected void onPostExecute(FeatureCollection featureCollection) {
-//            super.onPostExecute(featureCollection);
-//            SymbolLayerMapillaryActivity activity = activityRef.get();
-//            if (featureCollection == null || activity == null) {
-//                return;
-//            }
-//            activity.setupData(featureCollection);
-//            new GenerateViewIconTask(activity).execute(featureCollection);
-//        }
-//
-//        static String loadGeoJsonFromAsset(Context context, String filename) {
-//            try {
-//                // Load GeoJSON file from local asset folder
-//                InputStream is = context.getAssets().open(filename);
-//                int size = is.available();
-//                byte[] buffer = new byte[size];
-//                is.read(buffer);
-//                is.close();
-//                return new String(buffer, Charset.forName("UTF-8"));
-//            } catch (Exception exception) {
-//                throw new RuntimeException(exception);
-//            }
-//        }
-//    }
-//
-//    /**
-//     * AsyncTask to generate Bitmap from Views to be used as iconImage in a SymbolLayer.
-//     * <p>
-//     * Call be optionally be called to update the underlying data source after execution.
-//     * </p>
-//     * <p>
-//     * Generating Views on background thread since we are not going to be adding them to the view hierarchy.
-//     * </p>
-//     */
-//    private static class GenerateViewIconTask extends AsyncTask<FeatureCollection, Void, HashMap<String, Bitmap>> {
-//
-//        private final HashMap<String, View> viewMap = new HashMap<>();
-//        private final WeakReference<SymbolLayerMapillaryActivity> activityRef;
-//        private final boolean refreshSource;
-//
-//        GenerateViewIconTask(SymbolLayerMapillaryActivity activity, boolean refreshSource) {
-//            this.activityRef = new WeakReference<>(activity);
-//            this.refreshSource = refreshSource;
-//        }
-//
-//        GenerateViewIconTask(SymbolLayerMapillaryActivity activity) {
-//            this(activity, false);
-//        }
-//        @Override
-//        protected void onPostExecute(HashMap<String, Bitmap> bitmapHashMap) {
-//            super.onPostExecute(bitmapHashMap);
-//            SymbolLayerMapillaryActivity activity = activityRef.get();
-//            if (activity != null && bitmapHashMap != null) {
-//
-//                activity.setImageGenResults(viewMap, bitmapHashMap);
-//                if (refreshSource) {
-//                    activity.refreshSource();
-//                }
-//            }
-//        }
-//    }
-//
-//    /**
-//     * Async task which fetches pictures from around the POI using Mapillary services.
-//     * https://www.mapillary.com/developer/api-documentation/
-//     */
-//    private static class LoadMapillaryDataTask extends AsyncTask<Integer, Void, MapillaryDataLoadResult> {
-//
-//        static final String URL_IMAGE_PLACEHOLDER = "https://d1cuyjsrcm0gby.cloudfront.net/%s/thumb-320.jpg";
-//        static final String KEY_UNIQUE_FEATURE = "key";
-//        static final String TOKEN_UNIQUE_FEATURE = "{" + KEY_UNIQUE_FEATURE + "}";
-//        static final String ID_SOURCE = "cluster_source";
-//        static final String ID_LAYER_UNCLUSTERED = "unclustered_layer";
-//        static final int IMAGE_SIZE = 128;
-//        static final String API_URL = "https://a.mapillary.com/v3/images/"
-//                + "?lookat=%f,%f&closeto=%f,%f&radius=%d"
-//                + "&client_id=bjgtc1FDTnFPaXpxeTZuUDNabmJ5dzozOGE1ODhkMmEyYTkyZTI4";
-//
-//        private WeakReference<SymbolLayerMapillaryActivity> activityRef;
-//        private MapboxMap map;
-//        private Picasso picasso;
-//        private final Handler progressHandler;
-//        private int loadingProgress;
-//        private boolean loadingIncrease = true;
-//        private Feature feature;
-//
-//        public LoadMapillaryDataTask(SymbolLayerMapillaryActivity activity, MapboxMap map, Picasso picasso,
-//                                     Handler progressHandler, Feature feature) {
-//            this.activityRef = new WeakReference<>(activity);
-//            this.map = map;
-//            this.picasso = picasso;
-//            this.progressHandler = progressHandler;
-//            this.feature = feature;
-//        }
-//
-//        @Override
-//        protected void onPreExecute() {
-//            super.onPreExecute();
-//            loadingProgress = 0;
-//            setLoadingState(true, false);
-//        }
-//
-//        @Override
-//        protected MapillaryDataLoadResult doInBackground(Integer... radius) {
-//            progressHandler.post(progressRunnable);
-//            try {
-//                Thread.sleep(2500); //ensure loading visualisation
-//            } catch (InterruptedException exception) {
-//                exception.printStackTrace();
-//            }
-//            OkHttpClient okHttpClient = new OkHttpClient();
-//            try {
-//                Point poiPosition = (Point) feature.geometry();
-//
-//                @SuppressLint("DefaultLocale") Request request = new Request.Builder()
-//                        .url(String.format(API_URL,
-//                                poiPosition.longitude(), poiPosition.latitude(),
-//                                poiPosition.longitude(), poiPosition.latitude(),
-//                                radius[0]
-//                        ))
-//                        .build();
-//
-//                Response response = okHttpClient.newCall(request).execute();
-//                FeatureCollection featureCollection = FeatureCollection.fromJson(response.body().string());
-//                MapillaryDataLoadResult mapillaryDataLoadResult = new MapillaryDataLoadResult(featureCollection);
-//                for (Feature feature : featureCollection.features()) {
-//                    String imageId = feature.getStringProperty(KEY_UNIQUE_FEATURE);
-//                    String imageUrl = String.format(URL_IMAGE_PLACEHOLDER, imageId);
-//                    Bitmap bitmap = picasso.load(imageUrl).resize(IMAGE_SIZE, IMAGE_SIZE).get();
-//
-//                    //cropping bitmap to be circular
-//                    bitmap = getCroppedBitmap(bitmap);
-//
-//                    mapillaryDataLoadResult.add(feature, bitmap);
-//                }
-//                return mapillaryDataLoadResult;
-//
-//            } catch (Exception exception) {
-//                Timber.e(exception);
-//            }
-//            return null;
-//        }
-//
-//        @Override
-//        protected void onPostExecute(MapillaryDataLoadResult mapillaryDataLoadResult) {
-//            super.onPostExecute(mapillaryDataLoadResult);
-//            setLoadingState(false, true);
-//            if (mapillaryDataLoadResult == null) {
-//                SymbolLayerMapillaryActivity activity = activityRef.get();
-//                if (activity != null) {
-//                    Toast.makeText(activity, "Error. Unable to load Mapillary data.", Toast.LENGTH_LONG).show();
-//                }
-//                return;
-//            }
-//
-//            FeatureCollection featureCollection = mapillaryDataLoadResult.mapillaryFeatureCollection;
-//
-//            Map<Feature, Bitmap> bitmapMap = mapillaryDataLoadResult.bitmapHashMap;
-//            for (Map.Entry<Feature, Bitmap> featureBitmapEntry : bitmapMap.entrySet()) {
-//                Feature feature = featureBitmapEntry.getKey();
-//                String key = feature.getStringProperty(KEY_UNIQUE_FEATURE);
-//                map.getStyle().addImage(key, featureBitmapEntry.getValue());
-//            }
-//
-//            GeoJsonSource mapillarySource = (GeoJsonSource) map.getStyle().getSource(ID_SOURCE);
-//            if (mapillarySource == null) {
-//                map.getStyle().addSource(new GeoJsonSource(ID_SOURCE, featureCollection, new GeoJsonOptions()
-//                        .withCluster(true)
-//                        .withClusterMaxZoom(17)
-//                        .withClusterRadius(IMAGE_SIZE / 3)
-//                ));
-//
-//                // unclustered
-//                map.getStyle().addLayerBelow(new SymbolLayer(ID_LAYER_UNCLUSTERED, ID_SOURCE).withProperties(
-//                        iconImage(TOKEN_UNIQUE_FEATURE),
-//                        iconAllowOverlap(true),
-//                        iconSize(interpolate(exponential(1f), zoom(),
-//                                stop(12, 0.0f),
-//                                stop(15, 0.8f),
-//                                stop(16, 1.1f),
-//                                stop(17, 1.4f),
-//                                stop(18, 1.7f)
-//                        ))), MAKI_LAYER_ID);
-//
-//                // clustered
-//                int[][] layers = new int[][] {
-//                        new int[] {20, Color.RED},
-//                        new int[] {10, Color.BLUE},
-//                        new int[] {0, Color.GREEN}
-//                };
-//
-//                for (int i = 0; i < layers.length; i++) {
-//
-//                    Expression pointCount = toNumber(Expression.get("point_count"));
-//
-//                    //Add cluster circles
-//                    CircleLayer clusterLayer = new CircleLayer("cluster-" + i, ID_SOURCE);
-//                    clusterLayer.setProperties(
-//                            circleColor(layers[i][1]),
-//                            circleRadius(
-//                                    interpolate(
-//                                            exponential(1f),
-//                                            zoom(),
-//                                            stop(12, 10f),
-//                                            stop(14, 16f),
-//                                            stop(15, 18f),
-//                                            stop(16, 20f)
-//                                    )
-//                            ),
-//                            circleOpacity(0.6f)
-//                    );
-//                    clusterLayer.setMaxZoom(17f);
-//
-//                    // Add a filter to the cluster layer that hides the circles based on "point_count"
-//                    clusterLayer.setFilter(
-//                            i == 0
-//                                    ? gte(pointCount, literal(layers[i][0])) :
-//                                    all(
-//                                            gte(pointCount, literal(layers[i][0])),
-//                                            lt(pointCount, literal(layers[i - 1][0]))
-//                                    )
-//                    );
-//                    map.getStyle().addLayerBelow(clusterLayer, MAKI_LAYER_ID);
-//                }
-//
-//                //Add the count labels
-//                SymbolLayer count = new SymbolLayer("count", ID_SOURCE);
-//                count.setProperties(
-//                        textField("{point_count}"),
-//                        textSize(8f),
-//                        textOffset(new Float[] {0.0f, 0.0f}),
-//                        textColor(Color.WHITE),
-//                        textIgnorePlacement(true)
-//                );
-//                map.getStyle().addLayerBelow(count, MAKI_LAYER_ID);
-//            } else {
-//                mapillarySource.setGeoJson(featureCollection);
-//            }
-//        }
-//
-//        static Bitmap getCroppedBitmap(Bitmap bitmap) {
-//            Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
-//                    bitmap.getHeight(), Bitmap.Config.ARGB_8888);
-//            Canvas canvas = new Canvas(output);
-//
-//            final int color = 0xff424242;
-//            final Paint paint = new Paint();
-//            final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-//
-//            paint.setAntiAlias(true);
-//            canvas.drawARGB(0, 0, 0, 0);
-//            paint.setColor(color);
-//            // canvas.drawRoundRect(rectF, roundPx, roundPx, paint);
-//            canvas.drawCircle((float) bitmap.getWidth() / 2, (float) bitmap.getHeight() / 2,
-//                    (float) bitmap.getWidth() / 2, paint);
-//            paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-//            canvas.drawBitmap(bitmap, rect, rect, paint);
-//            //Bitmap _bmp = Bitmap.createScaledBitmap(output, 60, 60, false);
-//            //return _bmp;
-//            return output;
-//        }
-//
-//        private Runnable progressRunnable = new Runnable() {
-//            @Override
-//            public void run() {
-//                if (isCancelled()) {
-//                    setLoadingState(false, false);
-//                    return;
-//                }
-//
-//                if (loadingIncrease) {
-//                    if (loadingProgress >= LOADING_PROGRESS_STEPS) {
-//                        loadingIncrease = false;
-//                    }
-//                } else {
-//                    if (loadingProgress <= 0) {
-//                        loadingIncrease = true;
-//                    }
-//                }
-//
-//                loadingProgress = loadingIncrease ? loadingProgress + 1 : loadingProgress - 1;
-//
-//                feature.addNumberProperty(PROPERTY_LOADING_PROGRESS, loadingProgress);
-//                SymbolLayerMapillaryActivity activity = activityRef.get();
-//                if (activity != null) {
-//                    activity.refreshSource();
-//                }
-//                progressHandler.postDelayed(this, LOADING_STEP_DURATION);
-//            }
-//        };
-//
-//        private void setLoadingState(boolean isLoading, boolean isSuccess) {
-//            progressHandler.removeCallbacksAndMessages(null);
-//            feature.addBooleanProperty(PROPERTY_LOADING, isLoading);
-//            SymbolLayerMapillaryActivity activity = activityRef.get();
-//            if (activity != null) {
-//                activity.refreshSource();
-//
-//                if (isLoading) { //zooming to a loading state
-//                    activity.setActivityStep(STEP_LOADING);
-//                } else if (isSuccess) { //if success zooming to a ready state, otherwise do nothing
-//                    activity.setActivityStep(STEP_READY);
-//                }
-//            }
-//        }
-//    }
-//
-//    private static class MapillaryDataLoadResult {
-//        private final HashMap<Feature, Bitmap> bitmapHashMap = new HashMap<>();
-//        private final FeatureCollection mapillaryFeatureCollection;
-//
-//        MapillaryDataLoadResult(FeatureCollection mapillaryFeatureCollection) {
-//            this.mapillaryFeatureCollection = mapillaryFeatureCollection;
-//        }
-//
-//        public void add(Feature feature, Bitmap bitmap) {
-//            bitmapHashMap.put(feature, bitmap);
-//        }
-//    }
-//
-//    /**
-//     * Utility class to generate Bitmaps for Symbol.
-//     */
-//    private static class SymbolGenerator {
-//
-//        /**
-//         * Generate a Bitmap from an Android SDK View.
-//         *
-//         * @param view the View to be drawn to a Bitmap
-//         * @return the generated bitmap
-//         */
-//        static Bitmap generate(@NonNull View view) {
-//            int measureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
-//            view.measure(measureSpec, measureSpec);
-//
-//            int measuredWidth = view.getMeasuredWidth();
-//            int measuredHeight = view.getMeasuredHeight();
-//
-//            view.layout(0, 0, measuredWidth, measuredHeight);
-//            Bitmap bitmap = Bitmap.createBitmap(measuredWidth, measuredHeight, Bitmap.Config.ARGB_8888);
-//            bitmap.eraseColor(Color.TRANSPARENT);
-//            Canvas canvas = new Canvas(bitmap);
-//            view.draw(canvas);
-//            return bitmap;
-//        }
-//    }
-//
-//    /**
-//     * Util class that creates a Source and a Layer based on Mapillary data.
-//     * https://www.mapillary.com/developer/tiles-documentation/
-//     */
-//    private static class MapillaryTiles {
-//
-//        static final String ID_SOURCE = "mapillary.source";
-//        static final String ID_LINE_LAYER = "mapillary.layer.line";
-//        static final String URL_TILESET = "https://d25uarhxywzl1j.cloudfront.net/v0.1/{z}/{x}/{y}.mvt";
-//
-//        static Source createSource() {
-//            TileSet mapillaryTileset = new TileSet("2.1.0", MapillaryTiles.URL_TILESET);
-//            mapillaryTileset.setMinZoom(0);
-//            mapillaryTileset.setMaxZoom(14);
-//            return new VectorSource(MapillaryTiles.ID_SOURCE, mapillaryTileset);
-//        }
-//
-//        static Layer createLineLayer() {
-//            LineLayer lineLayer = new LineLayer(MapillaryTiles.ID_LINE_LAYER, MapillaryTiles.ID_SOURCE);
-//            lineLayer.setSourceLayer("mapillary-sequences");
-//            lineLayer.setProperties(
-//                    lineCap(Property.LINE_CAP_ROUND),
-//                    lineJoin(Property.LINE_JOIN_ROUND),
-//                    lineOpacity(0.6f),
-//                    lineWidth(2.0f),
-//                    lineColor(Color.GREEN)
-//            );
-//            return lineLayer;
-//        }
-//    }
-//
-//    interface ItemClickListener {
-//        void onClick(View view, int position);
-//    }
-//}
+package com.khama.demomapbox;
+
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.TypeEvaluator;
+import android.animation.ValueAnimator;
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.PointF;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.View;
+
+import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.mapbox.geojson.Feature;
+import com.mapbox.geojson.FeatureCollection;
+import com.mapbox.geojson.Point;
+import com.mapbox.mapboxsdk.Mapbox;
+import com.mapbox.mapboxsdk.camera.CameraPosition;
+import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
+import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.maps.MapView;
+import com.mapbox.mapboxsdk.maps.MapboxMap;
+import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.Style;
+import com.mapbox.mapboxsdk.style.expressions.Expression;
+import com.mapbox.mapboxsdk.style.layers.CircleLayer;
+import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
+import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.io.InputStream;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.ref.WeakReference;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static com.mapbox.mapboxsdk.style.expressions.Expression.eq;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.exponential;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.get;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.interpolate;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.literal;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.match;
+import static com.mapbox.mapboxsdk.style.expressions.Expression.stop;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleColor;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleOpacity;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.circleRadius;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconAllowOverlap;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconImage;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.iconSize;
+
+public class SymbolLayerMapillaryActivity extends AppCompatActivity implements OnMapReadyCallback,
+        MapboxMap.OnMapClickListener {
+    private static final String SOURCE_ID = "mapbox.poi";
+    private static final String MAKI_LAYER_ID = "mapbox.poi.maki";
+    private static final String LOADING_LAYER_ID = "mapbox.poi.loading";
+    private static final String LOADING_LAYER_ID1 = "mapbox.poi.loading1";
+
+    private static final String PROPERTY_SELECTED = "selected";
+    private static final String PROPERTY_LOADING = "loading";
+    private static final String PROPERTY_LOADING1 = "loading1";
+    private static final String PROPERTY_LOADING_PROGRESS = "loading_progress";
+    private static final String PROPERTY_LOADING_PROGRESS1 = "loading_progress1";
+    private static final String PROPERTY_LOADING_OPACITY = "loading_opacity";
+    private static final String PROPERTY_LOADING_OPACITY1 = "loading_opacity1";
+    private static final String PROPERTY_TITLE = "title";
+
+    private static final long CAMERA_ANIMATION_TIME = 1950;
+    private static final float LOADING_CIRCLE_RADIUS = 40;
+    private static final float LOADING_CIRCLE_RADIUS1 = 40;
+    private static final int LOADING_PROGRESS_STEPS = 25;
+    private static final int LOADING_PROGRESS_STEPS1 = 25;//number of steps in a progress animation
+    private static final int LOADING_STEP_DURATION = 50; //duration between each step
+
+    private MapView mapView;
+    private MapboxMap mapboxMap;
+    private RecyclerView recyclerView;
+
+    private GeoJsonSource source;
+    private FeatureCollection featureCollection;
+    private AnimatorSet animatorSet;
+
+    private LoadMapillaryDataTask loadMapillaryDataTask;
+
+    @ActivityStep
+    private int currentStep;
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef( {STEP_INITIAL, STEP_LOADING})
+    @interface ActivityStep {
+    }
+
+    private static final int STEP_INITIAL = 0;
+    private static final int STEP_LOADING = 1;
+
+    private static final Map<Integer, Double> stepZoomMap = new HashMap<>();
+
+    static {
+        stepZoomMap.put(STEP_INITIAL, 11.0);
+        stepZoomMap.put(STEP_LOADING, 13.5);
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Mapbox.getInstance(this, getString(R.string.access_token));
+        setContentView(R.layout.activity_symbol_layer_mapillary);
+
+        recyclerView = findViewById(R.id.rv_on_top_of_map);
+
+        // Initialize the map view
+        mapView = findViewById(R.id.mapView);
+        mapView.onCreate(savedInstanceState);
+        mapView.getMapAsync(this);
+    }
+
+    @Override
+    public void onMapReady(@NonNull final MapboxMap mapboxMap) {
+        this.mapboxMap = mapboxMap;
+        mapboxMap.setStyle(Style.MAPBOX_STREETS, style -> {
+            mapboxMap.getUiSettings().setCompassEnabled(false);
+            mapboxMap.getUiSettings().setLogoEnabled(false);
+            mapboxMap.getUiSettings().setAttributionEnabled(false);
+            new LoadPoiDataTask(SymbolLayerMapillaryActivity.this).execute();
+            mapboxMap.addOnMapClickListener(SymbolLayerMapillaryActivity.this);
+        });
+    }
+
+    @Override
+    public boolean onMapClick(@NonNull LatLng point) {
+        PointF screenPoint = mapboxMap.getProjection().toScreenLocation(point);
+        return handleClickIcon(screenPoint);
+    }
+
+    public void setupData(final FeatureCollection collection) {
+        if (mapboxMap == null) {
+            return;
+        }
+        featureCollection = collection;
+        mapboxMap.getStyle(style -> {
+            setupSource(style);
+            setupMakiLayer(style);
+            setupLoadingLayer(style);
+            setupLoadingLayer1(style);
+        });
+    }
+
+    private void setupSource(@NonNull Style loadedMapStyle) {
+        source = new GeoJsonSource(SOURCE_ID, featureCollection);
+        loadedMapStyle.addSource(source);
+    }
+
+    private void refreshSource() {
+        if (source != null && featureCollection != null) {
+            source.setGeoJson(featureCollection);
+        }
+    }
+
+    /**
+     * Setup a layer with maki icons, eg. restaurant.
+     */
+    private void setupMakiLayer(@NonNull Style loadedMapStyle) {
+        loadedMapStyle.addLayer(new SymbolLayer(MAKI_LAYER_ID, SOURCE_ID)
+                .withProperties(
+                        /* show maki icon based on the value of poi feature property
+                         * https://www.mapbox.com/maki-icons/
+                         */
+                        iconImage("{poi}-15"),
+
+                        /* allows show all icons */
+                        iconAllowOverlap(true),
+
+                        /* when feature is in selected state, grow icon */
+                        iconSize(match(Expression.toString(get(PROPERTY_SELECTED)), literal(1.0f),
+                                stop("true", 1.5f))))
+        );
+    }
+
+    /**
+     * Setup layer indicating that there is an ongoing progress.
+     */
+    private void setupLoadingLayer(@NonNull Style loadedMapStyle) {
+        loadedMapStyle.addLayerBelow(new CircleLayer(LOADING_LAYER_ID, SOURCE_ID)
+                .withProperties(
+                        circleRadius(interpolate(exponential(1), get(PROPERTY_LOADING_PROGRESS), getLoadingAnimationStops())),
+                        circleColor(Color.RED),
+                        circleOpacity(interpolate(exponential(1), get(PROPERTY_LOADING_OPACITY), getLoadingAnimationStops()))
+                )
+                .withFilter(eq(get(PROPERTY_LOADING), literal(true))), MAKI_LAYER_ID);
+    }
+
+    private Expression.Stop[] getLoadingAnimationStops() {
+        List<Expression.Stop> stops = new ArrayList<>();
+        for (int i = 0; i < LOADING_PROGRESS_STEPS; i++) {
+            stops.add(stop(i, LOADING_CIRCLE_RADIUS * i / LOADING_PROGRESS_STEPS));
+        }
+
+        return stops.toArray(new Expression.Stop[LOADING_PROGRESS_STEPS]);
+    }
+
+    private void setupLoadingLayer1(@NonNull Style loadedMapStyle) {
+        loadedMapStyle.addLayerBelow(new CircleLayer(LOADING_LAYER_ID1, SOURCE_ID)
+                .withProperties(
+                        circleRadius(interpolate(exponential(1), get(PROPERTY_LOADING_PROGRESS1), getLoadingAnimationStops1())),
+                        circleColor(Color.RED),
+                        circleOpacity(interpolate(exponential(1), get(PROPERTY_LOADING_OPACITY1), getLoadingAnimationStops1()))
+                )
+                .withFilter(eq(get(PROPERTY_LOADING1), literal(true))), MAKI_LAYER_ID);
+    }
+
+    private Expression.Stop[] getLoadingAnimationStops1() {
+        List<Expression.Stop> stops = new ArrayList<>();
+        for (int i = 0; i < LOADING_PROGRESS_STEPS1; i++) {
+            stops.add(stop(i, LOADING_CIRCLE_RADIUS1 * i / LOADING_PROGRESS_STEPS1));
+        }
+
+        return stops.toArray(new Expression.Stop[LOADING_PROGRESS_STEPS1]);
+    }
+
+    /**
+     * This method handles click events for maki symbols.
+     * <p>
+     * When a maki symbol is clicked, we moved that feature to the selected state.
+     * </p>
+     *
+     * @param screenPoint the point on screen clicked
+     */
+    private boolean handleClickIcon(PointF screenPoint) {
+        List<Feature> features = mapboxMap.queryRenderedFeatures(screenPoint, MAKI_LAYER_ID);
+        if (!features.isEmpty()) {
+            String title = features.get(0).getStringProperty(PROPERTY_TITLE);
+            List<Feature> featureList = featureCollection.features();
+            for (int i = 0; i < Objects.requireNonNull(featureList).size(); i++)
+                if (featureList.get(i).getStringProperty(PROPERTY_TITLE).equals(title))
+                    setSelected(i);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Set a feature selected state with the ability to scroll the RecycleViewer to the provided index.
+     *  @param index      the index of selected feature
+     *
+     */
+    private void setSelected(int index) {
+        if (recyclerView.getVisibility() == View.GONE) {
+            recyclerView.setVisibility(View.VISIBLE);
+        }
+
+        deselectAll(false);
+
+        Feature feature = Objects.requireNonNull(featureCollection.features()).get(index);
+        selectFeature(feature);
+        animateCameraToSelection(feature);
+        refreshSource();
+        loadMapillaryData(feature);
+
+        recyclerView.scrollToPosition(index);
+    }
+
+    /**
+     * Deselects the state of all the features
+     */
+    private void deselectAll(boolean hideRecycler) {
+        for (Feature feature : Objects.requireNonNull(featureCollection.features())) {
+            Objects.requireNonNull(feature.properties()).addProperty(PROPERTY_SELECTED, false);
+        }
+
+        if (hideRecycler) {
+            recyclerView.setVisibility(View.GONE);
+        }
+    }
+
+    /**
+     * Selects the state of a feature
+     *
+     * @param feature the feature to be selected.
+     */
+    private void selectFeature(Feature feature) {
+        Objects.requireNonNull(feature.properties()).addProperty(PROPERTY_SELECTED, true);
+    }
+
+    private Feature getSelectedFeature() {
+        if (featureCollection != null) {
+            for (Feature feature : Objects.requireNonNull(featureCollection.features())) {
+                if (feature.getBooleanProperty(PROPERTY_SELECTED)) {
+                    return feature;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Animate camera to a feature.
+     *
+     * @param feature the feature to animate to
+     */
+    private void animateCameraToSelection(Feature feature, double newZoom) {
+        CameraPosition cameraPosition = mapboxMap.getCameraPosition();
+
+        if (animatorSet != null) {
+            animatorSet.cancel();
+        }
+
+        animatorSet = new AnimatorSet();
+        animatorSet.playTogether(
+                createLatLngAnimator(cameraPosition.target, convertToLatLng(feature)),
+                createZoomAnimator(cameraPosition.zoom, newZoom)
+        );
+        animatorSet.start();
+    }
+
+    private void animateCameraToSelection(Feature feature) {
+        double zoom = feature.getNumberProperty("zoom").doubleValue();
+        animateCameraToSelection(feature, zoom);
+    }
+
+    private void loadMapillaryData(Feature feature) {
+        if (loadMapillaryDataTask != null) {
+            loadMapillaryDataTask.cancel(true);
+        }
+
+        loadMapillaryDataTask = new LoadMapillaryDataTask(this, new Handler(), new Handler(), feature);
+        loadMapillaryDataTask.execute(50);
+    }
+
+    private void setActivityStep(@ActivityStep int activityStep) {
+        Feature selectedFeature = getSelectedFeature();
+        double zoom = stepZoomMap.get(activityStep);
+        animateCameraToSelection(selectedFeature, zoom);
+
+        currentStep = activityStep;
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mapView.onStart();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mapView.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mapView.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        if (loadMapillaryDataTask != null) {
+            loadMapillaryDataTask.cancel(true);
+        }
+        mapView.onStop();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NotNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        mapView.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        mapView.onLowMemory();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mapboxMap != null) {
+            mapboxMap.removeOnMapClickListener(this);
+        }
+        mapView.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (currentStep == STEP_LOADING) {
+            if (loadMapillaryDataTask != null) {
+                loadMapillaryDataTask.cancel(true);
+            }
+            setActivityStep(STEP_INITIAL);
+            deselectAll(true);
+            refreshSource();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    private LatLng convertToLatLng(Feature feature) {
+        Point symbolPoint = (Point) feature.geometry();
+        return new LatLng(Objects.requireNonNull(symbolPoint).latitude(), symbolPoint.longitude());
+    }
+
+    private Animator createLatLngAnimator(LatLng currentPosition, LatLng targetPosition) {
+        ValueAnimator latLngAnimator = ValueAnimator.ofObject(new LatLngEvaluator(), currentPosition, targetPosition);
+        latLngAnimator.setDuration(CAMERA_ANIMATION_TIME);
+        latLngAnimator.setInterpolator(new FastOutSlowInInterpolator());
+        latLngAnimator.addUpdateListener(animation -> mapboxMap.moveCamera(CameraUpdateFactory.newLatLng((LatLng) animation.getAnimatedValue())));
+        return latLngAnimator;
+    }
+
+    private Animator createZoomAnimator(double currentZoom, double targetZoom) {
+        ValueAnimator zoomAnimator = ValueAnimator.ofFloat((float) currentZoom, (float) targetZoom);
+        zoomAnimator.setDuration(CAMERA_ANIMATION_TIME);
+        zoomAnimator.setInterpolator(new FastOutSlowInInterpolator());
+        zoomAnimator.addUpdateListener(animation -> mapboxMap.moveCamera(CameraUpdateFactory.zoomTo((Float) animation.getAnimatedValue())));
+        return zoomAnimator;
+    }
+
+    /**
+     * Helper class to evaluate LatLng objects with a ValueAnimator
+     */
+    private static class LatLngEvaluator implements TypeEvaluator<LatLng> {
+        private final LatLng latLng = new LatLng();
+
+        @Override
+        public LatLng evaluate(float fraction, LatLng startValue, LatLng endValue) {
+            latLng.setLatitude(startValue.getLatitude()
+                    + ((endValue.getLatitude() - startValue.getLatitude()) * fraction));
+            latLng.setLongitude(startValue.getLongitude()
+                    + ((endValue.getLongitude() - startValue.getLongitude()) * fraction));
+            return latLng;
+        }
+    }
+
+    /**
+     * AsyncTask to load data from the assets folder.
+     */
+    private static class LoadPoiDataTask extends AsyncTask<Void, Void, FeatureCollection> {
+
+        private final WeakReference<SymbolLayerMapillaryActivity> activityRef;
+
+        LoadPoiDataTask(SymbolLayerMapillaryActivity activity) {
+            this.activityRef = new WeakReference<>(activity);
+        }
+
+        @Override
+        protected FeatureCollection doInBackground(Void... params) {
+            SymbolLayerMapillaryActivity activity = activityRef.get();
+
+            if (activity == null) {
+                return null;
+            }
+
+            String geoJson = loadGeoJsonFromAsset(activity);
+            return FeatureCollection.fromJson(geoJson);
+        }
+
+        @Override
+        protected void onPostExecute(FeatureCollection featureCollection) {
+            super.onPostExecute(featureCollection);
+            SymbolLayerMapillaryActivity activity = activityRef.get();
+            if (featureCollection == null || activity == null) {
+                return;
+            }
+            activity.setupData(featureCollection);
+        }
+
+        static String loadGeoJsonFromAsset(Context context) {
+            try {
+                // Load GeoJSON file from local asset folder
+                InputStream is = context.getAssets().open("sf_poi.geojson");
+                int size = is.available();
+                byte[] buffer = new byte[size];
+                is.read(buffer);
+                is.close();
+                return new String(buffer, StandardCharsets.UTF_8);
+            } catch (Exception exception) {
+                throw new RuntimeException(exception);
+            }
+        }
+    }
+
+    /**
+     * Async task which fetches pictures from around the POI using Mapillary services.
+     * https://www.mapillary.com/developer/api-documentation/
+     */
+    private static class LoadMapillaryDataTask extends AsyncTask<Integer, Void, Void> {
+
+        private WeakReference<SymbolLayerMapillaryActivity> activityRef;
+        private final Handler progressHandler;
+        private final Handler progressHandler1;
+        private int loadingProgress;
+        private int loadingProgress1;
+        private float loadingOpacity;
+        private float loadingOpacity1;
+        private boolean loadingIncrease = true;
+        private boolean loadingIncrease1 = true;
+        private Feature feature;
+
+        LoadMapillaryDataTask(SymbolLayerMapillaryActivity activity,
+                              Handler progressHandler, Handler progressHandler1, Feature feature) {
+            this.activityRef = new WeakReference<>(activity);
+            this.progressHandler = progressHandler;
+            this.progressHandler1 = progressHandler1;
+            this.feature = feature;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            loadingProgress = 0;
+            loadingOpacity = 0.6f;
+            loadingProgress1 = 0;
+            loadingOpacity1 = 0.6f;
+
+            setLoadingState(true);
+        }
+
+        @Override
+        protected Void doInBackground(Integer... radius) {
+            progressHandler.post(progressRunnable);
+            progressHandler1.post(progressRunnable1);
+            try {
+                Thread.sleep(2500); //ensure loading visualisation
+            } catch (InterruptedException exception) {
+                exception.printStackTrace();
+            }
+            return null;
+        }
+
+
+        private Runnable progressRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (isCancelled()) {
+                    setLoadingState(false);
+                    return;
+                }
+
+                if (loadingIncrease) {
+                    if (loadingProgress >= LOADING_PROGRESS_STEPS) {
+                        loadingIncrease = false;
+                    }
+                } else {
+                    if (loadingProgress <= 0) {
+                        loadingIncrease = true;
+                    }
+                }
+
+                loadingProgress = loadingIncrease ? loadingProgress + 1 : 0;
+                loadingOpacity = loadingIncrease ? loadingOpacity - 0.02f : 0.6f;
+
+                feature.addNumberProperty(PROPERTY_LOADING_PROGRESS, loadingProgress);
+                feature.addNumberProperty(PROPERTY_LOADING_OPACITY, loadingOpacity);
+                SymbolLayerMapillaryActivity activity = activityRef.get();
+                if (activity != null) {
+                    activity.refreshSource();
+                }
+                if (loadingProgress == 0) {
+                    progressHandler.postDelayed(this, 500);
+                } else {
+                    progressHandler.postDelayed(this, LOADING_STEP_DURATION);
+                }
+            }
+        };
+
+        private Runnable progressRunnable1 = new Runnable() {
+            @Override
+            public void run() {
+                if (isCancelled()) {
+                    setLoadingState(false);
+                    return;
+                }
+
+                if (loadingIncrease1) {
+                    if (loadingProgress1 >= LOADING_PROGRESS_STEPS1) {
+                        loadingIncrease1 = false;
+                    }
+                } else {
+                    if (loadingProgress1 <= 0) {
+                        loadingIncrease1 = true;
+                    }
+                }
+
+                loadingProgress1 = loadingIncrease1 ? loadingProgress1 + 1 : 0;
+                loadingOpacity1 = loadingIncrease1 ? loadingOpacity1 - 0.02f : 0.6f;
+
+                feature.addNumberProperty(PROPERTY_LOADING_PROGRESS1, loadingProgress1);
+                feature.addNumberProperty(PROPERTY_LOADING_OPACITY1, loadingOpacity1);
+                SymbolLayerMapillaryActivity activity = activityRef.get();
+                if (activity != null) {
+                    activity.refreshSource();
+                }
+                if (loadingProgress1 == 1) {
+                    progressHandler.postDelayed(this, 500);
+                } else {
+                    progressHandler.postDelayed(this, LOADING_STEP_DURATION);
+                }
+            }
+        };
+
+        private void setLoadingState(boolean isLoading) {
+            progressHandler.removeCallbacksAndMessages(null);
+            progressHandler1.removeCallbacksAndMessages(null);
+            feature.addBooleanProperty(PROPERTY_LOADING, isLoading);
+            feature.addBooleanProperty(PROPERTY_LOADING1, isLoading);
+            SymbolLayerMapillaryActivity activity = activityRef.get();
+            if (activity != null) {
+                activity.refreshSource();
+
+                if (isLoading) { //zooming to a loading state
+                    activity.setActivityStep(STEP_LOADING);
+                }
+            }
+        }
+    }
+
+}
